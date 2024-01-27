@@ -18,7 +18,7 @@ function confver {
     Write-Host "[3] 2021"
     Write-Host "[4] 2022"
     Write-Host "[5] 2023"
-    $confver = Read-Host ""
+    $confver = Read-Host
     if ($confver -eq '1') {
         $pcversion = "2019"
     }
@@ -40,7 +40,7 @@ function confver {
 
 function binselect ([string]$pcversion) {
 
-    $binreturn
+    $binreturn = ""
 
     $bin2019 = "BIOS_2019_NoPwd.rom"
     $bin2020 = "BIOS_2020_NoPwd.rom"
@@ -67,14 +67,17 @@ function binselect ([string]$pcversion) {
     return $binreturn
 }
 
-function flash ([string]$pcversion, [string]$binpath) {
+function flash ([string]$pcversion, [string]$binpathfinal) {
+
     if ($pcversion.Contains("2023")) {
-        .\FPTW.exe -BIOS -F "$binpath"
+        .\FPTW.exe -BIOS -F $binpathfinal
     }
     else {
-        .\AFUWINx64.EXE "$binpath" /P /N /R 
+        .\AFUWINx64.EXE $binpathfinal /P /N /R
     }
 }
+
+# Start here
 
 [string]$model = Get-CimInstance -Classname Win32_ComputerSystem | Select-Object Model
 
@@ -127,7 +130,7 @@ clear
 header
 
 if ($isY13.Contains("true")) {
-    Write-Host "You are ready to flash (Unowhy Y13 "$pcversion" )"
+    Write-Host "You are ready to flash (Unowhy Y13 " + $pcversion + ")"
     Write-Host "Do you want to proceed now ?" -ForegroundColor Green
     Write-Host "Warning: Please, put PLUG your charger, CLOSE your programs, SAVE your works and DON'T CLOSE this window OR SHUTDOWN your PC, until the flash stop !!!" -ForegroundColor Red
     $conf2023 = Read-Host "[Y]/[N]"
@@ -138,14 +141,16 @@ if ($isY13.Contains("true")) {
 }
 
 $binfile = binselect($pcversion)
-$binpath = ..\ROM\$binfile
+$binpath = "..\ROM\" + $binfile
+$binfinal = """$binpath"""
 
 clear
 header
 
 if ($flashproceed.Contains("true")) {
     Write-Host "Flashing..." -ForegroundColor Red
-    flash($pcversion, $binpath)
+    Write-Host "File located at: $($binfinal)"
+    flash $pcversion $binfinal
     Write-Host ""
     Write-Host "Done" -ForegroundColor Green
     Write-Host ""

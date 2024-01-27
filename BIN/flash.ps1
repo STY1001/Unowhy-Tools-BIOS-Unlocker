@@ -69,10 +69,10 @@ function binselect ([string]$pcversion) {
 
 function flash ([string]$pcversion, [string]$binpath) {
     if ($pcversion.Contains("2023")) {
-        .\FPTW.exe -BIOS -F $binpath
+        .\FPTW.exe -BIOS -F "$binpath"
     }
     else {
-        .\AFUWINx64.EXE $binpath /P /N /R 
+        .\AFUWINx64.EXE "$binpath" /P /N /R 
     }
 }
 

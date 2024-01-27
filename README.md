@@ -1,5 +1,3 @@
-# !!! In testing !!!
-
 # Unowhy Tools BIOS Unlocker
 > A script that auto flash your Y13 to unlock the BIOS
 

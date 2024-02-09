@@ -120,6 +120,9 @@ else {
     if ($confpcver -eq 'n') {
         $pcversion = confver
     }
+    elseif ($confpcver -eq 'y') {
+        $isY13 = "true"
+    }
 }
 
 if ($pcversion.contains("null")) {
@@ -130,7 +133,7 @@ clear
 header
 
 if ($isY13.Contains("true")) {
-    Write-Host "You are ready to flash (Unowhy Y13 " + $pcversion + ")"
+    Write-Host "You are ready to flash (Unowhy Y13" $pcversion ")"
     Write-Host "Do you want to proceed now ?" -ForegroundColor Green
     Write-Host "Warning: Please, put PLUG your charger, CLOSE your programs, SAVE your works and DON'T CLOSE this window OR SHUTDOWN your PC, until the flash stop !!!" -ForegroundColor Red
     $conf2023 = Read-Host "[Y]/[N]"

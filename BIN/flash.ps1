@@ -17,7 +17,8 @@ function confver {
     Write-Host "[2] 2020"
     Write-Host "[3] 2021"
     Write-Host "[4] 2022"
-    Write-Host "[5] 2023"
+    Write-Host "[5] 2022 (Alt)"
+    Write-Host "[6] 2023"
     $confver = Read-Host
     if ($confver -eq '1') {
         $pcversion = "2019"
@@ -32,6 +33,9 @@ function confver {
         $pcversion = "2022"
     }
     if ($confver -eq '5') {
+        $pcversion = "2022alt"
+    }
+    if ($confver -eq '6') {
         $pcversion = "2023"
     }
 
@@ -46,6 +50,7 @@ function binselect ([string]$pcversion) {
     $bin2020 = "BIOS_2020_NoPwd.rom"
     $bin2021 = "BIOS_2021_NoPwd.rom"
     $bin2022 = "Y13_2022_Unlocked.rom"
+    $bin2022alt = "Y13_2022_Unlocked_Alt.rom"
     $bin2023 = "Y13_Software_2023_Unlocked.bin"
 
     if ($pcversion.contains("2019")) {
@@ -56,6 +61,9 @@ function binselect ([string]$pcversion) {
     }
     if ($pcversion.contains("2021")) {
         $binreturn = $bin2021
+    }
+    if ($pcversion.contains("2022alt")) {
+        $binreturn = $bin2022alt
     }
     if ($pcversion.contains("2022")) {
         $binreturn = $bin2022
@@ -80,6 +88,7 @@ function flash ([string]$pcversion, [string]$binpathfinal) {
 # Start here
 
 [string]$model = Get-CimInstance -Classname Win32_ComputerSystem | Select-Object Model
+[string]$biosver = Get-CimInstance -Classname Win32_BIOS | Select-Object SMBIOSBIOSVersion
 
 $pcversion = "null"
 $isY13 = "false"
@@ -95,7 +104,12 @@ if ($model.contains("Y13G011")) {
     $pcversion = "2021"
 }
 if ($model.contains("Y13G012")) {
-    $pcversion = "2022"
+    if($biosver.contains("0.5.1")) {
+        $pcversion = "2022alt"
+    }
+    else {
+        $pcversion = "2022"
+    }
 }
 if ($model.contains("Y13G113")) {
     $pcversion = "2023"

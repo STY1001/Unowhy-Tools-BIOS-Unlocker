@@ -62,11 +62,11 @@ function binselect ([string]$pcversion) {
     if ($pcversion.contains("2021")) {
         $binreturn = $bin2021
     }
-    if ($pcversion.contains("2022alt")) {
-        $binreturn = $bin2022alt
-    }
     if ($pcversion.contains("2022")) {
         $binreturn = $bin2022
+    }
+    if ($pcversion.contains("2022alt")) {
+        $binreturn = $bin2022alt
     }
     if ($pcversion.contains("2023")) {
         $binreturn = $bin2023

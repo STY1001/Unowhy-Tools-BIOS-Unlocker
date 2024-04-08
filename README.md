@@ -4,3 +4,9 @@
 For some reason, Unowhy don't longer provide BIOS unlock payload for who are finish the high school
 
 Btw, literally, I do this work instate of Unowhy but for free lol
+
+### How to use:
+1. Download the zip release
+2. Extract-it
+3. Launch **as admin** AutoFlash.bat
+4. Follow instruction

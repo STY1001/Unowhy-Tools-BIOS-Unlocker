@@ -8,5 +8,5 @@ Btw, literally, I do this work instate of Unowhy but for free lol
 ### How to use:
 1. Download the zip release
 2. Extract-it
-3. Launch **as admin** AutoFlash.bat
+3. Launch AutoFlash.bat **as admin**
 4. Follow instruction

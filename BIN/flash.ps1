@@ -87,7 +87,7 @@ function flash ([string]$pcversion, [string]$binpathfinal) {
 
 # Start here
 
-[string]$model = Get-CimInstance -Classname Win32_ComputerSystem | Select-Object Model
+[string]$model = Get-CimInstance -Classname Win32_ComputerSystem | Select-Object SystemSKUNumber
 [string]$biosver = Get-CimInstance -Classname Win32_BIOS | Select-Object SMBIOSBIOSVersion
 
 $pcversion = "null"

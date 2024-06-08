@@ -94,16 +94,16 @@ $pcversion = "null"
 $isY13 = "false"
 $flashproceed = "false"
 
-if ($model.contains("Y13G002")) {
+if ($model.contains("Y13G002S4EI")) {
     $pcversion = "2019"
 }
-if ($model.contains("Y13G010")) {
+if ($model.contains("Y13G010S4EI")) {
     $pcversion = "2020"
 }
-if ($model.contains("Y13G011")) {
+if ($model.contains("Y13G011S4EI")) {
     $pcversion = "2021"
 }
-if ($model.contains("Y13G012")) {
+if ($model.contains("Y13G012S4EI")) {
     if($biosver.contains("0.5.1")) {
         $pcversion = "2022alt"
     }
@@ -111,7 +111,7 @@ if ($model.contains("Y13G012")) {
         $pcversion = "2022"
     }
 }
-if ($model.contains("Y13G113")) {
+if ($model.contains("Y13G113S4EI")) {
     $pcversion = "2023"
 }
 
@@ -169,7 +169,7 @@ if ($flashproceed.Contains("true")) {
     Write-Host "File located at: $($binfinal)"
     flash $pcversion $binfinal
     Write-Host ""
-    Write-Host "Done" -ForegroundColor Green
-    Write-Host ""
     Write-Host "Please Reboot, To access to the BIOS, press DEL or ESC at boot"
+    pause
+    exit
 }

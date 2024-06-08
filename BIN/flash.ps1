@@ -170,6 +170,5 @@ if ($flashproceed.Contains("true")) {
     flash $pcversion $binfinal
     Write-Host ""
     Write-Host "Please Reboot, To access to the BIOS, press DEL or ESC at boot"
-    pause
     exit
 }

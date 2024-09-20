@@ -84,7 +84,7 @@ function binselect ([string]$pcversion) {
 
 function flash ([string]$pcversion, [string]$binpathfinal) {
 
-    if ($pcversion.Contains("2023")) {
+    if ($pcversion.Contains("2023") -or $pcversion.Contains("2024")) {
         .\FPTW.exe -BIOS -F $binpathfinal
     }
     else {
@@ -160,9 +160,9 @@ if ($isY13.Contains("true")) {
     Write-Host "You are ready to flash (Unowhy Y13" $pcversion ")"
     Write-Host "Do you want to proceed now ?" -ForegroundColor Green
     Write-Host "Warning: Please, put PLUG your charger, CLOSE your programs, SAVE your works and DON'T CLOSE this window OR SHUTDOWN your PC, until the flash stop !!!" -ForegroundColor Red
-    $conf2023 = Read-Host "[Y]/[N]"
+    $conf = Read-Host "[Y]/[N]"
     Write-Host ""
-    if ($conf2023 -eq 'y') {
+    if ($conf -eq 'y') {
         $flashproceed = "true"
     }
 }

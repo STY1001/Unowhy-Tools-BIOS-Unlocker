@@ -18,7 +18,7 @@ function confver {
     Write-Host "[3] 2021"
     Write-Host "[4] 2022"
     Write-Host "[5] 2022 (Alt)"
-    Write-Host "[6] 2023"
+    Write-Host "[7] 2024"
     $confver = Read-Host
     if ($confver -eq '1') {
         $pcversion = "2019"
@@ -38,6 +38,9 @@ function confver {
     if ($confver -eq '6') {
         $pcversion = "2023"
     }
+    if ($confver -eq '7') {
+        $pcversion = "2024"
+    }
 
     return $pcversion
 }
@@ -52,6 +55,7 @@ function binselect ([string]$pcversion) {
     $bin2022 = "Y13_2022_Unlocked.rom"
     $bin2022alt = "Y13_2022_Unlocked_Alt.rom"
     $bin2023 = "Y13_Software_2023_Unlocked.bin"
+    $bin2024 = "Y13_Software_2024_Unlocked.bin"
 
     if ($pcversion.contains("2019")) {
         $binreturn = $bin2019
@@ -70,6 +74,9 @@ function binselect ([string]$pcversion) {
     }
     if ($pcversion.contains("2023")) {
         $binreturn = $bin2023
+    }
+    if ($pcversion.contains("2024")) {
+        $binreturn = $bin2024
     }
 
     return $binreturn
@@ -113,6 +120,9 @@ if ($model.contains("Y13G012S4EI")) {
 }
 if ($model.contains("Y13G113S4EI")) {
     $pcversion = "2023"
+}
+if ($model.contains("Y13G201S4EI")) {
+    $pcversion = "2024"
 }
 
 clear

@@ -57,28 +57,28 @@ function model2label ([string]$model) {
     $modellabel = ""
 
     if ($model.contains("2019")) {
-        $modellabel = "Unowhy Y13 2019"
+        $modellabel = "2019"
     }
     if ($model.contains("2020")) {
-        $modellabel = "Unowhy Y13 2020"
+        $modellabel = "2020"
     }
     if ($model.contains("2021")) {
-        $modellabel = "Unowhy Y13 2021"
+        $modellabel = "2021"
     }
     if ($model.contains("2022_1")) {
-        $modellabel = "Unowhy Y13 2022 (0.1.1)"
+        $modellabel = "2022 (0.1.1)"
     }
     if ($model.contains("2022_2")) {
-        $modellabel = "Unowhy Y13 2022 (0.5.1)"
+        $modellabel = "2022 (0.5.1)"
     }
     if ($model.contains("2023_1")) {
-        $modellabel = "Unowhy Y13 2023 (0.20.15)"
+        $modellabel = "2023 (0.20.15)"
     }
     if ($model.contains("2024_1")) {
-        $modellabel = "Unowhy Y13 2024 (0.20.11)"
+        $modellabel = "2024 (0.20.11)"
     }
     if ($model.contains("2025_1")) {
-        $modellabel = "Unowhy Y13 2025"
+        $modellabel = "2025"
     }
 
     return $modellabel

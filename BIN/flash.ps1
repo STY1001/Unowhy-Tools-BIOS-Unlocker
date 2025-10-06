@@ -129,6 +129,7 @@ function flash ([string]$pcversion, [string]$binpathfinal) {
 
     if ($pcversion.Contains("2023") -or $pcversion.Contains("2024") -or $pcversion.Contains("2025")) {
         .\FPTW.exe -BIOS -F $binpathfinal
+        .\FPTW.exe -GRESET
     }
     else {
         .\AFUWINx64.EXE $binpathfinal /P /N /R
@@ -144,42 +145,22 @@ $pcversion = "null"
 $isY13 = "false"
 $flashproceed = "false"
 
-if ($model.contains("Y13G002S4EI")) {
-    $pcversion = "2019"
-}
-if ($model.contains("Y13G010S4EI")) {
-    $pcversion = "2020"
-}
-if ($model.contains("Y13G011S4EI")) {
-    $pcversion = "2021"
-}
-if ($model.contains("Y13G012S4EI")) {
-    if($biosver.contains("0.1.1")) {
-        $pcversion = "2022_1"
+switch -Regex ($model) {
+    "Y13G002S4EI" { $pcversion = "2019" }
+    "Y13G010S4EI" { $pcversion = "2020" }
+    "Y13G011S4EI" { $pcversion = "2021" }
+
+    "Y13G012S4EI" {
+        switch -Regex ($biosver) {
+            "0\.1\.1" { $pcversion = "2022_1"; break }
+            "0\.5\.1" { $pcversion = "2022_2"; break }
+            default   { $pcversion = "2022_1" }
+        }
     }
-    if($biosver.contains("0.5.1")) {
-        $pcversion = "2022_2"
-    }
-    $pcversion = "2022_1"
-}
-if ($model.contains("Y13G113S4EI")) {
-    if($biosver.contains("0.20.15")) {
-        $pcversion = "2023_1"
-    }
-    $pcversion = "2023_1"
-}
-if ($model.contains("Y13G201S4EI")) {
-    if($biosver.contains("0.20.11")) {
-        $pcversion = "2024_1"
-    }
-    $pcversion = "2024_1"
-}
-if ($model.contains("Y13G202S4EI"))
-{
-    if($biosver.contains("0.20.18")) {
-        $pcversion = "2025_1"
-    }
-    $pcversion = "2025_1"
+
+    "Y13G113S4EI" { $pcversion = "2023_1" }
+    "Y13G201S4EI" { $pcversion = "2024_1" }
+    "Y13G202S4EI" { $pcversion = "2025_1" }
 }
 
 clear
@@ -207,6 +188,7 @@ else {
     $confpcver = Read-Host "[Y]/[N]"
     Write-Host ""
     if ($confpcver -eq 'n') {
+        $isY13 = "true"
         $pcversion = confver
     }
     elseif ($confpcver -eq 'y') {

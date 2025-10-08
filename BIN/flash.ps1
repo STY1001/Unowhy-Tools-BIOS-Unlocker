@@ -1,11 +1,13 @@
 # Unowhy Tools BIOS Unlocker
 # by STY1001
 
+$version = "4.0"
+
 [string]$model = Get-CimInstance -Classname Win32_ComputerSystem | Select-Object SystemSKUNumber
 [string]$biosver = Get-CimInstance -Classname Win32_BIOS | Select-Object SMBIOSBIOSVersion
 
 function header {
-    Write-Host "Unowhy Tools BIOS Unlocker"
+    Write-Host "Unowhy Tools BIOS Unlocker $($version)"
     Write-Host "for Unowhy Y13"
     Write-Host "by STY1001"
     Write-Host ""

@@ -17,6 +17,44 @@ function header {
     Write-Host ""
 }
 
+function listselectvolume {
+    Clear-Host
+    header
+
+    Write-Host "Select the drive letter where do you want to save the BIOS backup"
+
+    # List available volumes
+    Get-WmiObject Win32_LogicalDisk | Sort-Object DeviceID | Select-Object @{Name = 'Drive letter'; Expression = { '[{0}]' -f $_.DeviceID.TrimEnd(':') } },
+    @{Name = 'Type'; Expression = {
+            switch ($_.DriveType) {
+                2 { 'Removable' }
+                3 { 'Fixed' }
+                4 { 'Network' }
+                5 { 'CD/DVD' }
+                default { 'Other' }
+            }
+        }
+    },
+    @{Name = 'Name'; Expression = { $_.VolumeName } },
+    @{Name = 'File system'; Expression = { $_.FileSystem } },
+    @{Name = 'Free space'; Expression = { '{0} GB' -f [math]::Round($_.FreeSpace / 1GB, 2) } },
+    @{Name = 'Total size'; Expression = { '{0} GB' -f [math]::Round($_.Size / 1GB, 2) } } | Format-Table -AutoSize
+
+    # Get available letters
+    $availableLetters = Get-WmiObject Win32_LogicalDisk | Sort-Object DeviceID
+    $letterrange = "[{0}-{1}]" -f ($availableLetters[0].DeviceID.TrimEnd(':')), ($availableLetters[-1].DeviceID.TrimEnd(':'))
+
+    # Select a volume
+    $letter = Read-Host "$letterrange"
+
+    if ($letter -notmatch "^[A-Z]$" -or ($availableLetters.DeviceID -notcontains "$letter`:")) {
+        return $null
+    }
+
+    return $letter
+}
+
+# Manual version selection
 function confver {
     Clear-Host
     header
@@ -41,17 +79,16 @@ function confver {
         '7' { $pcversion = "2024_1" }
         '8' { $pcversion = "2025_1" }
         default { 
-            $pcversion = confver
+            $pcversion = $null
         }
     }
 
     return $pcversion
 }
 
+# Function to convert model to label
 function model2label ([string]$model) {
-
     $modellabel = ""
-
     switch -Regex ($model) {
         "2019" { $modellabel = "2019" }
         "2020" { $modellabel = "2020" }
@@ -63,14 +100,12 @@ function model2label ([string]$model) {
         "2025_1" { $modellabel = "2025 (0.20.18)" }
         default { $modellabel = "" }
     }
-
     return $modellabel
 }
 
+# Function to select the right binary
 function binselect ([string]$pcversion) {
-
     $binreturn = ""
-
     $bin2019 = "BIOS_2019_NoPwd.rom"
     $bin2020 = "BIOS_2020_NoPwd.rom"
     $bin2021 = "BIOS_2021_NoPwd.rom"
@@ -79,7 +114,6 @@ function binselect ([string]$pcversion) {
     $bin2023_1 = "Y13_Software_2023_0.20.15_Unlocked.bin"
     $bin2024_1 = "Y13_Software_2024_0.20.11_Unlocked.bin"
     $bin2025_1 = "Y13_Software_2025_0.20.18_Unlocked.bin"
-
     switch -Regex ($pcversion) {
         "2019" { $binreturn = $bin2019 }
         "2020" { $binreturn = $bin2020 }
@@ -91,27 +125,32 @@ function binselect ([string]$pcversion) {
         "2025_1" { $binreturn = $bin2025_1 }
         default { $binreturn = "" }
     }
-
     return $binreturn
 }
 
+# Flash
 function flash ([string]$pcversion, [string]$binpathfinal) {
-
     if ($pcversion.Contains("2023") -or $pcversion.Contains("2024") -or $pcversion.Contains("2025")) {
-        .\FPTW.exe -BIOS -F $binpathfinal
+        # For 2023 and later, use FPTW (for Jasper Lake)
+        .\FPTW.exe -BIOS -F $
+        Write-Host "Flash completed. The PC need a ME reset now, press ENTER to proceed."
+        pause
+        # For this platform, a ME reset is needed after flash to reinitialize the PC
         .\FPTW.exe -GRESET
     }
     else {
+        # Else, use AFUWIN
         .\AFUWINx64.EXE $binpathfinal /P /N /R
     }
 }
 
-# Start here
+# Entry point (Start here)
 
-$pcversion = "null"
-$isY13 = "false"
-$flashproceed = "false"
+$pcversion = $null
+$isY13 = $false
+$flashproceed = $false
 
+# Detect model
 switch -Regex ($model) {
     "Y13G002S4EI" { $pcversion = "2019" }
     "Y13G010S4EI" { $pcversion = "2020" }
@@ -133,54 +172,65 @@ switch -Regex ($model) {
 Clear-Host
 header
 
-if ($pcversion.contains("null")) {
+# Confirm if is Y13 (and ask witch version)
+if ($null -eq $pcversion) {
     Write-Host "Are you sure that PC is an Unowhy Y13 ?"
     $confY13 = Read-Host "[Y]/[N]:"
     Write-Host ""
     if ($confY13 -eq 'y') {
-        $isY13 = "true"
+        $isY13 = $true
         $pcversion = confver
     }
 }
+# Confirm the detected version
 else {
     Write-Host "Are you sure that Unowhy Y13 is a $(model2label($pcversion)) ?"
     $confpcver = Read-Host "[Y]/[N]:"
     Write-Host ""
     if ($confpcver -eq 'n') {
-        $isY13 = "true"
         $pcversion = confver
+        if ($null -eq $pcversion) {
+            $isY13 = $false
+        }
+        else {
+            $isY13 = $true
+        }
     }
     elseif ($confpcver -eq 'y') {
-        $isY13 = "true"
+        $isY13 = $true
     }
 }
 
-if ($pcversion.contains("null")) {
+# If nothing selected, exit
+if ($null -eq $pcversion) {
     $isY13 = "false"
 }
 
 Clear-Host
 header
 
-if ($isY13.Contains("true")) {
+# Proceed to flash
+if ($isY13 -eq $true) {
     Write-Host "You are ready to flash (Unowhy Y13 $(model2label($pcversion)))"
     Write-Host "Do you want to proceed now ?" -ForegroundColor Green
     Write-Host "Warning: Please, put PLUG your charger, CLOSE your programs, SAVE your works and DON'T CLOSE this window OR SHUTDOWN your PC, until the flash stop !!!" -ForegroundColor Red
     $conf = Read-Host "[Y]/[N]:"
     Write-Host ""
     if ($conf -eq 'y') {
-        $flashproceed = "true"
+        $flashproceed = $true
     }
 }
 
-$binfile = binselect($pcversion)
-$binpath = "..\ROM\" + $binfile
-$binfinal = """$binpath"""
 
 Clear-Host
 header
 
-if ($flashproceed.Contains("true")) {
+# Flashing
+if ($flashproceed -eq $true) {
+    $binfile = binselect($pcversion)
+    $binpath = "..\ROM\" + $binfile
+    $binfinal = """$binpath"""
+
     Write-Host "Flashing..." -ForegroundColor Red
     Write-Host "File located at: $($binfinal)"
     Write-Host ""
@@ -189,7 +239,10 @@ if ($flashproceed.Contains("true")) {
     Write-Host "Flash done !" -ForegroundColor Green
     Write-Host ""
 }
-
-if ($flashproceed.Contains("false")) {
+ 
+# Flash cancelled
+if ($flashproceed -eq $false) {
     Write-Host "Flash cancelled." -ForegroundColor Yellow
 }
+
+exit

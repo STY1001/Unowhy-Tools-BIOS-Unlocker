@@ -9,4 +9,5 @@ cd /d %~dp0\BIN
 
 powershell -ExecutionPolicy Bypass -Command "& .\flash.ps1"
 
+pause
 exit 0

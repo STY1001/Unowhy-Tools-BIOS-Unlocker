@@ -231,5 +231,4 @@ else {
     Write-Host ("{0}[5;33mFlash cancelled.{0}[0m" -f [char]27)
 }
 
-pause
 exit 0

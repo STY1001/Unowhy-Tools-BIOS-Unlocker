@@ -16,12 +16,12 @@ $versionMap = @{
 
 function Show-Header {
     Clear-Host
-    Write-Host "==============================================" -ForegroundColor Cyan
-    Write-Host "$scriptName $version" -ForegroundColor Green
-    Write-Host "For Unowhy Y13 (2019-2025)" -ForegroundColor Gray
-    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host "=============================================="
+    Write-Host "   Unowhy Tools BIOS Unlocker $version"
+    Write-Host "   For Unowhy Y13 (2019-2025)"
+    Write-Host "=============================================="
     Write-Host ""
-    Write-Host "Information about this PC (save this in case of issues) :" -ForegroundColor Yellow
+    Write-Host "Information about this PC (save this in case of issues !) :"
     Write-Host "- Model (SKU) : $($model.SystemSKUNumber)"
     Write-Host "- BIOS Version : $($biosver.SMBIOSBIOSVersion)"
     Write-Host ""

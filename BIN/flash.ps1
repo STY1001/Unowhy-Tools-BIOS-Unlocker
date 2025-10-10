@@ -50,12 +50,12 @@ function Select-Drive {
     @{Name = "Free Space (GB)"; Expression = { [math]::Round($_.FreeSpace / 1GB, 2) } },
     @{Name = "Total Size (GB)"; Expression = { [math]::Round($_.Size / 1GB, 2) } }
 
-    Write-Host "Select the drive to save the current BIOS backup :" -ForegroundColor Cyan
+    Write-Host "Select the drive to save the current BIOS backup :"
     $drives | Format-Table -AutoSize
 
     $validLetters = ($drives | ForEach-Object { $_.Letter }).ToCharArray() -join ','
     do {
-        $letter = Read-Host "Enter a valid drive letter [$validLetters]"
+        $letter = (Read-Host "Enter a valid drive letter {0}[3;5;39m[$validLetters]{0}[0m" -f [char]27)
     } while ($letter -notmatch "^[$validLetters]$")
 
     return "$letter`:"
@@ -69,7 +69,7 @@ function Backup-BIOS {
     if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir -Force | Out-Null }
 
     $backupPath = Join-Path -Path $DriveLetter -ChildPath "UTBU_Backup_$((Get-CimInstance -ClassName Win32_BIOS | Select-Object SerialNumber).SerialNumber).$(if ($pcVersionInfo.Tool -eq "AFUWIN") { "rom" } else { "bin" })"
-    Write-Host "Backing up current BIOS to $backupPath..." -ForegroundColor Yellow
+    Write-Host ("{0}[5;33mBacking up current BIOS to $backupPath...{0}[0m" -f [char]27)
 
     try {
         if ($pcVersionInfo.Tool -eq "AFUWIN") {
@@ -80,22 +80,22 @@ function Backup-BIOS {
         }
 
         if (Test-Path $backupPath) {
-            Write-Host "Backup successful !" -ForegroundColor Green
+            Write-Host ("{0}[5;32mBackup successful !{0}[0m" -f [char]27)
             return $true
         }
         else {
-            Write-Host "Backup failed !" -ForegroundColor Red
+            Write-Host ("{0}[5;31mBackup failed !{0}[0m" -f [char]27)
             return $false
         }
     }
     catch {
-        Write-Host "Error during backup : $_" -ForegroundColor Red
+        Write-Host ("{0}[5;31mError during backup : $_{0}[0m" -f [char]27)
         return $false
     }
 }
 
 function Select-VersionManually {
-    Write-Host "Select the version of your Unowhy Y13 :" -ForegroundColor Cyan
+    Write-Host "Select the version of your Unowhy Y13 :"
     $i = 1
     $versionMap.GetEnumerator() | ForEach-Object {
         Write-Host "[$i] $($_.Value.Label)"
@@ -103,7 +103,7 @@ function Select-VersionManually {
     }
 
     do {
-        $choice = Read-Host "[1-$($versionMap.Count)]"
+        $choice = Read-Host ("{0}[3;5;39m[1-$($versionMap.Count)]{0}[0m" -f [char]27)
     } while ($choice -notmatch "^[1-$($versionMap.Count)]$")
 
     return $versionMap.Keys[$choice - 1]
@@ -115,34 +115,32 @@ function Update-BIOS {
         [string]$BinPath
     )
 
-    Write-Host "Preparing to flash $($versionMap[$VersionKey].Label)..." -ForegroundColor Yellow
+    Write-Host ("{0}[5;31mFlashing $($versionMap[$VersionKey].Label) using $($versionMap[$VersionKey].Tool)...{0}[0m" -f [char]27)
 
     try {
         if ($versionMap[$VersionKey].Tool -eq "AFUWIN") {
-            Write-Host "Using AFUWIN to flash..." -ForegroundColor Cyan
             $process = Start-Process -FilePath "$PSScriptRoot\AFUWINx64.EXE" -ArgumentList "$BinPath /P /N /R" -Wait -NoNewWindow -PassThru
         }
         elseif ($versionMap[$VersionKey].Tool -eq "FPTW") {
-            Write-Host "Using FPTW to flash..." -ForegroundColor Cyan
             $process = Start-Process -FilePath "$PSScriptRoot\FPTW.exe" -ArgumentList "-BIOS -F $BinPath" -Wait -NoNewWindow -PassThru
             if ($process.ExitCode -eq 0) {
-                Write-Host "ME reset required. Press Enter to continue..." -ForegroundColor Yellow
+                Write-Host ("{0}[5;33mME reset required. Press Enter to continue...{0}[0m" -f [char]27)
                 Read-Host
                 Start-Process -FilePath "$PSScriptRoot\FPTW.exe" -ArgumentList "-GRESET" -Wait -NoNewWindow
             }
         }
 
         if ($process.ExitCode -eq 0) {
-            Write-Host "Flash successful !" -ForegroundColor Green
+            Write-Host ("{0}[5;32mFlash successful !{0}[0m" -f [char]27)
             return $true
         }
         else {
-            Write-Host "Flash failed! (Exit Code : $($process.ExitCode))" -ForegroundColor Red
+            Write-Host ("{0}[5;31mFlash failed! (Exit Code : $($process.ExitCode)){0}[0m" -f [char]27)
             return $false
         }
     }
     catch {
-        Write-Host "Error during flash : $_" -ForegroundColor Red
+        Write-Host ("{0}[5;31mError during flash : $_{0}[0m" -f [char]27)
         return $false
     }
 }
@@ -170,7 +168,7 @@ switch -Regex ($model.SystemSKUNumber) {
 $requiredTools = @("AFUWINx64.EXE", "FPTW.exe")
 foreach ($tool in $requiredTools) {
     if (-not (Test-Path "$PSScriptRoot\$tool")) {
-        Write-Host "Error: $tool not found in $PSScriptRoot !" -ForegroundColor Red
+        Write-Host ("{0}[4;5;31mError: $tool not found in $PSScriptRoot !{0}[0m" -f [char]27)
         exit 1
     }
 }
@@ -178,24 +176,24 @@ foreach ($tool in $requiredTools) {
 Show-Header
 
 if (-not (Test-Admin)) {
-    Write-Host "This script must be run as Administrator !" -ForegroundColor Red
+    Write-Host ("{0}[4;5;31mThis script must be run as Administrator !{0}[0m" -f [char]27)
     exit 1
 }
 
 if ($null -eq $pcVersion) {
-    Write-Host "This PC is not recognized as a Unowhy Y13." -ForegroundColor Yellow
-    $confirm = Read-Host "Are you sure this PC is a Unowhy Y13 ? [Y]/[N]"
+    Write-Host ("{0}[5;33mThis PC is not recognized as a Unowhy Y13 !{0}[0m" -f [char]27)
+    $confirm = Read-Host "Are you sure this PC is a Unowhy Y13 ? $("{0}[3;5;39m[Y]/[N]{0}[0m" -f [char]27)"
     if ($confirm -ne 'Y') { exit 0 }
     $pcVersion = Select-VersionManually
 }
 else {
-    Write-Host "Detected model : $($versionMap[$pcVersion].Label)"
-    $confirm = Read-Host "Do you confirm this model ? [Y]/[N]"
+    Write-Host ("Detected model : {0}[5;39m$($versionMap[$pcVersion].Label){0}[0m" -f [char]27)
+    $confirm = Read-Host "Do you confirm this model ? $("{0}[3;5;39m[Y]/[N]{0}[0m" -f [char]27)"
     if ($confirm -eq 'N') { $pcVersion = Select-VersionManually }
 }
 
 if ($null -eq $pcVersion) {
-    Write-Host "No valid version selected. Aborting." -ForegroundColor Red
+    Write-Host ("{0}[4;31mNo valid version selected. Aborting.{0}[0m" -f [char]27)
     exit 0
 }
 
@@ -204,33 +202,34 @@ $pcVersionInfo = $versionMap[$pcVersion]
 $driveLetter = Select-Drive
 
 if (-not (Backup-BIOS -DriveLetter $driveLetter)) {
-    Write-Host "Aborting : Backup failed." -ForegroundColor Red
+    Write-Host ("{0}[5;31mAborting : Backup failed{0}[0m" -f [char]27)
     exit 1
 }
 
-Write-Host "You are about to flash the BIOS with version $($pcVersionInfo.Label)." -ForegroundColor Yellow
-Write-Host "WARNING :" -ForegroundColor Red
-Write-Host "- Plug in the charger."
-Write-Host "- Close all programs."
-Write-Host "- Do NOT close this window or turn off your PC during the flash !"
-$confirm = Read-Host "Do you confirm the flash? [Y]/[N]"
+Write-Host ("{0}[33mYou are about to flash the BIOS with version {0}[5m$($pcVersionInfo.Label){0}[0m" -f [char]27)
+Write-Host ("{0}[4;31mWARNING! :{0}[0m" -f [char]27)
+Write-Host ("{0}[5;31m- Plug in the charger.{0}[0m" -f [char]27)
+Write-Host ("{0}[5;31m- Close all programs.{0}[0m" -f [char]27)
+Write-Host ("{0}[5;31m- Do NOT close this window or turn off your PC during the flash !{0}[0m" -f [char]27)
+$confirm = Read-Host "Do you confirm the flash? $("{0}[3;5;39m[Y]/[N]{0}[0m" -f [char]27)"
 
 if ($confirm -eq 'Y') {
     $binPath = Join-Path -Path $romDir -ChildPath $pcVersionInfo.File
     if (Test-Path $binPath) {
         if (Update-BIOS -VersionKey $pcVersion -BinPath $binPath) {
-            Write-Host "Operation completed successfully !" -ForegroundColor Green
+            Write-Host ("{0}[5;32mOperation completed successfully !{0}[0m" -f [char]27)
         }
         else {
-            Write-Host "Flash failed. Check $logFile for details." -ForegroundColor Red
+            Write-Host ("{0}[5;31mFlash failed. Check $logFile for details.{0}[0m" -f [char]27)
         }
     }
     else {
-        Write-Host "BIOS file not found: $binPath" -ForegroundColor Red
+        Write-Host ("{0}[5;31mBIOS file not found: $binPath{0}[0m" -f [char]27)
     }
 }
 else {
-    Write-Host "Flash cancelled." -ForegroundColor Yellow
+    Write-Host ("{0}[5;33mFlash cancelled.{0}[0m" -f [char]27)
 }
 
+pause
 exit 0

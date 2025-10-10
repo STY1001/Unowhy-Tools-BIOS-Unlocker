@@ -8,3 +8,5 @@ echo Launching Unowhy Tools BIOS Unlocker...
 cd /d %~dp0\BIN
 
 powershell -ExecutionPolicy Bypass -Command "& .\flash.ps1"
+
+exit 0

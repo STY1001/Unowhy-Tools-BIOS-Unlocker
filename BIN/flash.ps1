@@ -4,14 +4,14 @@
 $version = "5.0"
 
 $versionMap = @{
-    "2019"      = @{ Label = "2019";          File = "BIOS_2019_NoPwd.rom";          Tool = "AFUWIN" }
-    "2020"      = @{ Label = "2020";          File = "BIOS_2020_NoPwd.rom";          Tool = "AFUWIN" }
-    "2021"      = @{ Label = "2021";          File = "BIOS_2021_NoPwd.rom";          Tool = "AFUWIN" }
-    "2022_1"    = @{ Label = "2022 (0.1.1)";   File = "Y13_2022_Unlocked_0.1.1.rom";  Tool = "AFUWIN" }
-    "2022_2"    = @{ Label = "2022 (0.5.1)";   File = "Y13_2022_Unlocked_0.5.1.rom";  Tool = "AFUWIN" }
-    "2023_1"    = @{ Label = "2023 (0.20.15)"; File = "Y13_Software_2023_0.20.15_Unlocked.bin"; Tool = "FPTW"  }
-    "2024_1"    = @{ Label = "2024 (0.20.11)"; File = "Y13_Software_2024_0.20.11_Unlocked.bin"; Tool = "FPTW"  }
-    "2025_1"    = @{ Label = "2025 (0.20.18)"; File = "Y13_Software_2025_0.20.18_Unlocked.bin"; Tool = "FPTW"  }
+    "2019"   = @{ Label = "2019"; File = "BIOS_2019_NoPwd.rom"; Tool = "AFUWIN" }
+    "2020"   = @{ Label = "2020"; File = "BIOS_2020_NoPwd.rom"; Tool = "AFUWIN" }
+    "2021"   = @{ Label = "2021"; File = "BIOS_2021_NoPwd.rom"; Tool = "AFUWIN" }
+    "2022_1" = @{ Label = "2022 (0.1.1)"; File = "Y13_2022_Unlocked_0.1.1.rom"; Tool = "AFUWIN" }
+    "2022_2" = @{ Label = "2022 (0.5.1)"; File = "Y13_2022_Unlocked_0.5.1.rom"; Tool = "AFUWIN" }
+    "2023_1" = @{ Label = "2023 (0.20.15)"; File = "Y13_Software_2023_0.20.15_Unlocked.bin"; Tool = "FPTW" }
+    "2024_1" = @{ Label = "2024 (0.20.11)"; File = "Y13_Software_2024_0.20.11_Unlocked.bin"; Tool = "FPTW" }
+    "2025_1" = @{ Label = "2025 (0.20.18)"; File = "Y13_Software_2025_0.20.18_Unlocked.bin"; Tool = "FPTW" }
 }
 
 function Show-Header {
@@ -24,7 +24,6 @@ function Show-Header {
     Write-Host "Information about this PC (save this in case of issues) :" -ForegroundColor Yellow
     Write-Host "- Model (SKU) : $($model.SystemSKUNumber)"
     Write-Host "- BIOS Version : $($biosver.SMBIOSBIOSVersion)"
-    Write-Host "- Architecture : $((Get-CimInstance Win32_ComputerSystem).SystemType)"
     Write-Host ""
 }
 
@@ -35,18 +34,21 @@ function Test-Admin {
 }
 
 function Select-Drive {
-    $drives = Get-WmiObject Win32_LogicalDisk |
-              Where-Object { $_.DriveType -in @(2, 3) } |
-              Sort-Object DeviceID |
-              Select-Object @{Name="Letter"; Expression={$_.DeviceID.TrimEnd(':')}},
-                            @{Name="Type"; Expression={
-                                switch ($_.DriveType) {
-                                    2 { "Removable" }
-                                    3 { "Fixed" }
-                                    default { "Other" }
-                                }
-                            }},
-                            @{Name="Free Space (GB)"; Expression={[math]::Round($_.FreeSpace / 1GB, 2)}}
+    $drives = Get-CimInstance -ClassName Win32_LogicalDisk |
+    Where-Object { $_.DriveType -in @(2, 3) } |
+    Sort-Object DeviceID |
+    Select-Object @{Name = "Letter"; Expression = { '[{0}]' -f $_.DeviceID.TrimEnd(':') } },
+    @{Name = "Volume Name"; Expression = { $_.VolumeName } },  
+    @{Name = "Device Type"; Expression = {
+            switch ($_.DriveType) {
+                2 { "Removable" }
+                3 { "Fixed" }
+                default { "Other" }
+            }
+        }
+    },
+    @{Name = "Free Space (GB)"; Expression = { [math]::Round($_.FreeSpace / 1GB, 2) } },
+    @{Name = "Total Size (GB)"; Expression = { [math]::Round($_.Size / 1GB, 2) } }
 
     Write-Host "Select the drive to save the current BIOS backup :" -ForegroundColor Cyan
     $drives | Format-Table -AutoSize
@@ -66,7 +68,7 @@ function Backup-BIOS {
 
     if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir -Force | Out-Null }
 
-    $backupPath = Join-Path -Path $DriveLetter -ChildPath "Backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').rom"
+    $backupPath = Join-Path -Path $DriveLetter -ChildPath "UTBU_Backup_$((Get-CimInstance -ClassName Win32_BIOS | Select-Object SerialNumber).SerialNumber).$(if ($pcVersionInfo.Tool -eq "AFUWIN") { "rom" } else { "bin" })"
     Write-Host "Backing up current BIOS to $backupPath..." -ForegroundColor Yellow
 
     try {
@@ -107,7 +109,7 @@ function Select-VersionManually {
     return $versionMap.Keys[$choice - 1]
 }
 
-function Flash-BIOS {
+function Update-BIOS {
     param (
         [string]$VersionKey,
         [string]$BinPath
@@ -149,20 +151,20 @@ $model = Get-CimInstance -ClassName Win32_ComputerSystem | Select-Object SystemS
 $biosver = Get-CimInstance -ClassName Win32_BIOS | Select-Object SMBIOSBIOSVersion
 
 switch -Regex ($model.SystemSKUNumber) {
-    "Y13G002S4EI" { $pcVersion = "2019"      }
-    "Y13G010S4EI" { $pcVersion = "2020"      }
-    "Y13G011S4EI" { $pcVersion = "2021"      }
+    "Y13G002S4EI" { $pcVersion = "2019" }
+    "Y13G010S4EI" { $pcVersion = "2020" }
+    "Y13G011S4EI" { $pcVersion = "2021" }
     "Y13G012S4EI" {
         switch -Regex ($biosver.SMBIOSBIOSVersion) {
             "0\.1\.1" { $pcVersion = "2022_1" }
             "0\.5\.1" { $pcVersion = "2022_2" }
-            default   { $pcVersion = "2022_1" }
+            default { $pcVersion = "2022_1" }
         }
     }
     "Y13G113S4EI" { $pcVersion = "2023_1" }
     "Y13G201S4EI" { $pcVersion = "2024_1" }
     "Y13G202S4EI" { $pcVersion = "2025_1" }
-    default       { $pcVersion = $null     }
+    default { $pcVersion = $null }
 }
 
 $requiredTools = @("AFUWINx64.EXE", "FPTW.exe")
@@ -216,7 +218,7 @@ $confirm = Read-Host "Do you confirm the flash? [Y]/[N]"
 if ($confirm -eq 'Y') {
     $binPath = Join-Path -Path $romDir -ChildPath $pcVersionInfo.File
     if (Test-Path $binPath) {
-        if (Flash-BIOS -VersionKey $pcVersion -BinPath $binPath) {
+        if (Update-BIOS -VersionKey $pcVersion -BinPath $binPath) {
             Write-Host "Operation completed successfully !" -ForegroundColor Green
         }
         else {

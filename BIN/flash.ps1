@@ -209,6 +209,57 @@ if ($null -eq $pcversion) {
 Clear-Host
 header
 
+# Backup BIOS
+if ($isY13 -eq $true) {
+    Write-Host "Do you want to backup your current BIOS before flashing ?"
+    $confbackup = Read-Host "[Y]/[N]:"
+    Write-Host ""
+    if ($confbackup -eq 'y') {
+        $letter = listselectvolume
+        if ($null -ne $letter) {
+            [string]$serial = Get-CimInstance -Classname Win32_BIOS | Select-Object SerialNumber
+            $extension = ""
+            if ($pcversion.Contains("2023") -or $pcversion.Contains("2024") -or $pcversion.Contains("2025")) {
+                $extension = "bin"
+            }
+            else {
+                $extension = "rom"
+            }
+            $backupfile = "UTBU_Backup_$($serial).$($extension)"
+            $backuppath = "$($letter):\$($backupfile)"
+            $backuppathfinal = """$backuppath"""
+
+            Write-Host "Backuping BIOS..." -ForegroundColor Green
+            Write-Host "File will be saved at: $($backuppathfinal)"
+            Write-Host ""
+            if ($pcversion.Contains("2023") -or $pcversion.Contains("2024") -or $pcversion.Contains("2025")) {
+                # For 2023 and later, use FPTW (for Jasper Lake)
+                .\FPTW.exe -BIOS -D $backuppathfinal
+            }
+            else {
+                # Else, use AFUWIN
+                .\AFUWINx64.EXE /O $backuppathfinal
+            }
+            Write-Host ""
+            Write-Host "Backup done !" -ForegroundColor Green
+            Write-Host ""
+        }
+        else {
+            Write-Host "No valid drive letter selected, backup cancelled." -ForegroundColor Yellow
+            Write-Host ""
+        }
+    }
+    else {
+        Write-Host "Backup cancelled." -ForegroundColor Yellow
+        Write-Host ""
+    }
+}
+
+pause
+
+Clear-Host
+header
+
 # Proceed to flash
 if ($isY13 -eq $true) {
     Write-Host "You are ready to flash (Unowhy Y13 $(model2label($pcversion)))"
@@ -220,7 +271,11 @@ if ($isY13 -eq $true) {
         $flashproceed = $true
     }
 }
-
+else {
+    Write-Host "This PC is not an Unowhy Y13 or the version is not selected, flash cancelled." -ForegroundColor Red
+    Write-Host ""
+    exit
+}
 
 Clear-Host
 header

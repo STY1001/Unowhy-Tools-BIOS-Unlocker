@@ -18,7 +18,7 @@ function Show-Header {
     Clear-Host
     Write-Host "=============================================="
     Write-Host "   Unowhy Tools BIOS Unlocker $version"
-    Write-Host "   For Unowhy Y13 (2019-2025)"
+    Write-Host "   - For Unowhy Y13 (2019-2025)"
     Write-Host "=============================================="
     Write-Host ""
     Write-Host "Information about this PC (save this in case of issues !) :"
@@ -168,7 +168,7 @@ switch -Regex ($model.SystemSKUNumber) {
 $requiredTools = @("AFUWINx64.EXE", "FPTW.exe")
 foreach ($tool in $requiredTools) {
     if (-not (Test-Path "$PSScriptRoot\$tool")) {
-        Write-Host ("{0}[4;5;31mError: $tool not found in $PSScriptRoot !{0}[0m" -f [char]27)
+        Write-Host ("{0}[5;31mError: $tool not found in $PSScriptRoot !{0}[0m" -f [char]27)
         exit 1
     }
 }
@@ -176,14 +176,17 @@ foreach ($tool in $requiredTools) {
 Show-Header
 
 if (-not (Test-Admin)) {
-    Write-Host ("{0}[4;5;31mThis script must be run as Administrator !{0}[0m" -f [char]27)
+    Write-Host ("{0}[5;31mThis script must be run as Administrator !{0}[0m" -f [char]27)
     exit 1
 }
 
 if ($null -eq $pcVersion) {
     Write-Host ("{0}[5;33mThis PC is not recognized as a Unowhy Y13 !{0}[0m" -f [char]27)
     $confirm = Read-Host "Are you sure this PC is a Unowhy Y13 ? $("{0}[3;5;39m[Y]/[N]{0}[0m" -f [char]27)"
-    if ($confirm -ne 'Y') { exit 0 }
+    if ($confirm -ne 'Y') { 
+        Write-Host ("{0}[5;31mAborting.{0}[0m" -f [char]27)
+        exit 0
+     }
     $pcVersion = Select-VersionManually
 }
 else {
@@ -193,7 +196,7 @@ else {
 }
 
 if ($null -eq $pcVersion) {
-    Write-Host ("{0}[4;31mNo valid version selected. Aborting.{0}[0m" -f [char]27)
+    Write-Host ("{0}[5;31mNo valid version selected. Aborting.{0}[0m" -f [char]27)
     exit 0
 }
 

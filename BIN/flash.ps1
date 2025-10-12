@@ -3,7 +3,7 @@
 
 $version = "5.0"
 
-$versionMap = @{
+$versionMap = [ordered]@{
     "2019"   = @{ Label = "2019"; File = "BIOS_2019_NoPwd.rom"; Tool = "AFUWIN" }
     "2020"   = @{ Label = "2020"; File = "BIOS_2020_NoPwd.rom"; Tool = "AFUWIN" }
     "2021"   = @{ Label = "2021"; File = "BIOS_2021_NoPwd.rom"; Tool = "AFUWIN" }
@@ -14,16 +14,25 @@ $versionMap = @{
     "2025_1" = @{ Label = "2025 (0.20.18)"; File = "Y13_Software_2025_0.20.18_Unlocked.bin"; Tool = "FPTW" }
 }
 
+$lines = "================================================================="
 function Show-Header {
     Clear-Host
-    Write-Host "=============================================="
-    Write-Host "   Unowhy Tools BIOS Unlocker $version"
-    Write-Host "   - For Unowhy Y13 (2019-2025)"
-    Write-Host "=============================================="
+    Write-Host $lines
     Write-Host ""
-    Write-Host "Information about this PC (save this in case of issues !) :"
-    Write-Host "- Model (SKU) : $($model.SystemSKUNumber)"
-    Write-Host "- BIOS Version : $($biosver.SMBIOSBIOSVersion)"
+    Write-Host "   Unowhy Tools BIOS Unlocker $version"
+    Write-Host "   by STY1001"
+    Write-Host "   - for Unowhy Y13 (2019-2025)"
+    Write-Host ""
+    Write-Host "   Information about this PC (save this in case of issues !) :"
+    Write-Host "   - Model (SKU) : $($model.SystemSKUNumber)"
+    Write-Host "   - BIOS Version : $($biosver.SMBIOSBIOSVersion)"
+
+    if ($pcVersionInfo) {
+        Write-Host ""
+        Write-Host "   Selected version : $($pcVersionInfo.Label) (Mode: $selectMode)"
+    }
+    Write-Host ""
+    Write-Host $lines
     Write-Host ""
 }
 
@@ -33,7 +42,7 @@ function Test-Admin {
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-function Select-Drive {
+function Select-BackupDrive {
     $drives = Get-CimInstance -ClassName Win32_LogicalDisk |
     Where-Object { $_.DriveType -in @(2, 3) } |
     Sort-Object DeviceID |
@@ -51,35 +60,36 @@ function Select-Drive {
     @{Name = "Total Size (GB)"; Expression = { [math]::Round($_.Size / 1GB, 2) } }
 
     Write-Host "Select the drive to save the current BIOS backup :"
-    $drives | Format-Table -AutoSize
 
-    $validLetters = ($drives | ForEach-Object { $_.Letter }).ToCharArray() -join ','
+    $drives | Format-Table -AutoSize | Out-Host
+
+    $validLetters = ($drives | ForEach-Object { $_.Letter.Trim('[', ']') }) -join ','
     do {
-        $letter = (Read-Host "Enter a valid drive letter {0}[3;5;39m[$validLetters]{0}[0m" -f [char]27)
+        $letter = Read-Host ("Enter a valid drive letter {0}[3;5;39m[$validLetters]{0}[0m" -f [char]27)
     } while ($letter -notmatch "^[$validLetters]$")
 
-    return "$letter`:"
+    return ($letter.Trim().ToUpper() + ":")
 }
-
+    
 function Backup-BIOS {
     param (
         [string]$DriveLetter
     )
 
-    if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir -Force | Out-Null }
-
-    $backupPath = Join-Path -Path $DriveLetter -ChildPath "UTBU_Backup_$((Get-CimInstance -ClassName Win32_BIOS | Select-Object SerialNumber).SerialNumber).$(if ($pcVersionInfo.Tool -eq "AFUWIN") { "rom" } else { "bin" })"
+    $backupDir = Join-Path -Path $DriveLetter -ChildPath "UTBU"
+    if (-not (Test-Path -Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir -Force | Out-Null }
+    $backupPath = Join-Path -Path $DriveLetter -ChildPath ("UTBU_Backup_$((Get-CimInstance -ClassName Win32_BIOS | Select-Object SerialNumber).SerialNumber).$(if ($pcVersionInfo.Tool -eq "AFUWIN") { "rom" } else { "bin" })").Replace(" ", "_")    
+    if (Test-Path -Path $backupPath) { Remove-Item -Path $backupPath -Force }
     Write-Host ("{0}[5;33mBacking up current BIOS to $backupPath...{0}[0m" -f [char]27)
-
     try {
         if ($pcVersionInfo.Tool -eq "AFUWIN") {
-            & "$PSScriptRoot\AFUWINx64.EXE" $backupPath /O | Out-File $logFile -Append -Encoding UTF8
+            $process = Start-Process -FilePath "$PSScriptRoot\AFUWINx64.EXE" -ArgumentList "$backupPath /O" -Wait -NoNewWindow -PassThru
         }
         elseif ($pcVersionInfo.Tool -eq "FPTW") {
-            & "$PSScriptRoot\FPTW.exe" -BIOS -D $backupPath | Out-File $logFile -Append -Encoding UTF8
+            $process = Start-Process -FilePath "$PSScriptRoot\FPTW.exe" -ArgumentList "-BIOS -D $backupPath" -Wait -NoNewWindow -PassThru
         }
 
-        if (Test-Path $backupPath) {
+        if ((Test-Path $backupPath) -and ($process.ExitCode -eq 0)) {
             Write-Host ("{0}[5;32mBackup successful !{0}[0m" -f [char]27)
             return $true
         }
@@ -95,19 +105,23 @@ function Backup-BIOS {
 }
 
 function Select-VersionManually {
+    Show-Header
     Write-Host "Select the version of your Unowhy Y13 :"
     $i = 1
-    $versionMap.GetEnumerator() | ForEach-Object {
-        Write-Host "[$i] $($_.Value.Label)"
+    $keys = @()
+    foreach ($entry in $versionMap.GetEnumerator()) {
+        Write-Host "[$i] $($entry.Value.Label)"
+        $keys += $entry.Key
         $i++
     }
 
     do {
         $choice = Read-Host ("{0}[3;5;39m[1-$($versionMap.Count)]{0}[0m" -f [char]27)
-    } while ($choice -notmatch "^[1-$($versionMap.Count)]$")
+    } while (-not ($choice -as [int]) -or $choice -lt 1 -or $choice -gt $versionMap.Count)
 
-    return $versionMap.Keys[$choice - 1]
+    return $keys[$choice - 1]
 }
+
 
 function Update-BIOS {
     param (
@@ -116,7 +130,6 @@ function Update-BIOS {
     )
 
     Write-Host ("{0}[5;31mFlashing $($versionMap[$VersionKey].Label) using $($versionMap[$VersionKey].Tool)...{0}[0m" -f [char]27)
-
     try {
         if ($versionMap[$VersionKey].Tool -eq "AFUWIN") {
             $process = Start-Process -FilePath "$PSScriptRoot\AFUWINx64.EXE" -ArgumentList "$BinPath /P /N /R" -Wait -NoNewWindow -PassThru
@@ -131,15 +144,18 @@ function Update-BIOS {
         }
 
         if ($process.ExitCode -eq 0) {
+            Show-Header
             Write-Host ("{0}[5;32mFlash successful !{0}[0m" -f [char]27)
             return $true
         }
         else {
+            Show-Header
             Write-Host ("{0}[5;31mFlash failed! (Exit Code : $($process.ExitCode)){0}[0m" -f [char]27)
             return $false
         }
     }
     catch {
+        Show-Header
         Write-Host ("{0}[5;31mError during flash : $_{0}[0m" -f [char]27)
         return $false
     }
@@ -180,20 +196,32 @@ if (-not (Test-Admin)) {
     exit 1
 }
 
+Show-Header
+
 if ($null -eq $pcVersion) {
     Write-Host ("{0}[5;33mThis PC is not recognized as a Unowhy Y13 !{0}[0m" -f [char]27)
     $confirm = Read-Host "Are you sure this PC is a Unowhy Y13 ? $("{0}[3;5;39m[Y]/[N]{0}[0m" -f [char]27)"
     if ($confirm -ne 'Y') { 
+        Show-Header
         Write-Host ("{0}[5;31mAborting.{0}[0m" -f [char]27)
         exit 0
-     }
+    }
+    Show-Header
     $pcVersion = Select-VersionManually
+    $selectMode = "Manual"
 }
 else {
     Write-Host ("Detected model : {0}[5;39m$($versionMap[$pcVersion].Label){0}[0m" -f [char]27)
     $confirm = Read-Host "Do you confirm this model ? $("{0}[3;5;39m[Y]/[N]{0}[0m" -f [char]27)"
-    if ($confirm -eq 'N') { $pcVersion = Select-VersionManually }
+    if ($confirm -eq 'N') { 
+        Show-Header
+        $pcVersion = Select-VersionManually 
+        $selectMode = "Manual"
+    } 
+    else { $selectMode = "Auto" }
 }
+
+Show-Header
 
 if ($null -eq $pcVersion) {
     Write-Host ("{0}[5;31mNo valid version selected. Aborting.{0}[0m" -f [char]27)
@@ -202,12 +230,22 @@ if ($null -eq $pcVersion) {
 
 $pcVersionInfo = $versionMap[$pcVersion]
 
-$driveLetter = Select-Drive
+Show-Header
 
-if (-not (Backup-BIOS -DriveLetter $driveLetter)) {
-    Write-Host ("{0}[5;31mAborting : Backup failed{0}[0m" -f [char]27)
-    exit 1
+$confirm = Read-Host ("Do you want to backup the current BIOS before flashing ? $("{0}[3;5;39m[Y]/[N]{0}[0m" -f [char]27)")
+if ($confirm -eq 'Y') {
+    Show-Header
+    $driveLetter = Select-BackupDrive
+    Show-Header
+    if (-not (Backup-BIOS -DriveLetter $driveLetter)) {
+        Write-Host ("{0}[5;31mAborting : Backup failed{0}[0m" -f [char]27)
+        exit 1
+    }
+    Write-Host ""
+    cmd /c pause # Pause to let user see the message
 }
+
+Show-Header
 
 Write-Host ("{0}[33mYou are about to flash the BIOS with version {0}[5m$($pcVersionInfo.Label){0}[0m" -f [char]27)
 Write-Host ("{0}[4;31mWARNING! :{0}[0m" -f [char]27)
@@ -215,22 +253,24 @@ Write-Host ("{0}[5;31m- Plug in the charger.{0}[0m" -f [char]27)
 Write-Host ("{0}[5;31m- Close all programs.{0}[0m" -f [char]27)
 Write-Host ("{0}[5;31m- Do NOT close this window or turn off your PC during the flash !{0}[0m" -f [char]27)
 $confirm = Read-Host "Do you confirm the flash? $("{0}[3;5;39m[Y]/[N]{0}[0m" -f [char]27)"
-
 if ($confirm -eq 'Y') {
     $binPath = Join-Path -Path $romDir -ChildPath $pcVersionInfo.File
     if (Test-Path $binPath) {
+        Show-Header
         if (Update-BIOS -VersionKey $pcVersion -BinPath $binPath) {
             Write-Host ("{0}[5;32mOperation completed successfully !{0}[0m" -f [char]27)
         }
         else {
-            Write-Host ("{0}[5;31mFlash failed. Check $logFile for details.{0}[0m" -f [char]27)
+            Write-Host ("{0}[5;31mFlash failed.{0}[0m" -f [char]27)
         }
     }
     else {
+        Show-Header
         Write-Host ("{0}[5;31mBIOS file not found: $binPath{0}[0m" -f [char]27)
     }
 }
 else {
+    Show-Header
     Write-Host ("{0}[5;33mFlash cancelled.{0}[0m" -f [char]27)
 }
 

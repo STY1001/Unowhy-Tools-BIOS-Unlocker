@@ -80,7 +80,7 @@ function Backup-BIOS {
     if (-not (Test-Path -Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir -Force | Out-Null }
     $backupPath = Join-Path -Path $backupDir -ChildPath ("UTBU_Backup_$((Get-CimInstance -ClassName Win32_BIOS | Select-Object SerialNumber).SerialNumber).$(if ($pcVersionInfo.Tool -eq "AFUWIN") { "rom" } else { "bin" })").Replace(" ", "_")    
     if (Test-Path -Path $backupPath) { Remove-Item -Path $backupPath -Force }
-    Write-Host ("{0}[5;33mBacking up current BIOS to $backupPath...{0}[0m" -f [char]27)
+    Write-Host ("{0}[5;33mBacking up current BIOS to '$backupPath'...{0}[0m" -f [char]27)
     try {
         if ($pcVersionInfo.Tool -eq "AFUWIN") {
             $process = Start-Process -FilePath "$PSScriptRoot\AFUWINx64.EXE" -ArgumentList "$backupPath /O" -Wait -NoNewWindow -PassThru
@@ -129,7 +129,7 @@ function Update-BIOS {
         [string]$BinPath
     )
 
-    Write-Host ("{0}[5;31mFlashing $($versionMap[$VersionKey].Label) using $($versionMap[$VersionKey].Tool)...{0}[0m" -f [char]27)
+    Write-Host ("{0}[5;31mFlashing '$BinPath' using $($versionMap[$VersionKey].Tool)...{0}[0m" -f [char]27)
     try {
         if ($versionMap[$VersionKey].Tool -eq "AFUWIN") {
             $process = Start-Process -FilePath "$PSScriptRoot\AFUWINx64.EXE" -ArgumentList "$BinPath /P /N /R" -Wait -NoNewWindow -PassThru

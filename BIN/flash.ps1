@@ -78,7 +78,7 @@ function Backup-BIOS {
 
     $backupDir = Join-Path -Path $DriveLetter -ChildPath "UTBU"
     if (-not (Test-Path -Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir -Force | Out-Null }
-    $backupPath = Join-Path -Path $DriveLetter -ChildPath ("UTBU_Backup_$((Get-CimInstance -ClassName Win32_BIOS | Select-Object SerialNumber).SerialNumber).$(if ($pcVersionInfo.Tool -eq "AFUWIN") { "rom" } else { "bin" })").Replace(" ", "_")    
+    $backupPath = Join-Path -Path $backupDir -ChildPath ("UTBU_Backup_$((Get-CimInstance -ClassName Win32_BIOS | Select-Object SerialNumber).SerialNumber).$(if ($pcVersionInfo.Tool -eq "AFUWIN") { "rom" } else { "bin" })").Replace(" ", "_")    
     if (Test-Path -Path $backupPath) { Remove-Item -Path $backupPath -Force }
     Write-Host ("{0}[5;33mBacking up current BIOS to $backupPath...{0}[0m" -f [char]27)
     try {
@@ -254,8 +254,10 @@ Write-Host ("{0}[5;31m- Close all programs.{0}[0m" -f [char]27)
 Write-Host ("{0}[5;31m- Do NOT close this window or turn off your PC during the flash !{0}[0m" -f [char]27)
 $confirm = Read-Host "Do you confirm the flash? $("{0}[3;5;39m[Y]/[N]{0}[0m" -f [char]27)"
 if ($confirm -eq 'Y') {
+    $rootDir = Split-Path -Path $PSScriptRoot -Parent
+    $romDir = Join-Path -Path $rootDir -ChildPath "ROM"
     $binPath = Join-Path -Path $romDir -ChildPath $pcVersionInfo.File
-    if (Test-Path $binPath) {
+    if (Test-Path -Path $binPath) {
         Show-Header
         if (Update-BIOS -VersionKey $pcVersion -BinPath $binPath) {
             Write-Host ("{0}[5;32mOperation completed successfully !{0}[0m" -f [char]27)

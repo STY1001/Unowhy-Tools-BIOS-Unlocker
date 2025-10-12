@@ -136,11 +136,6 @@ function Update-BIOS {
         }
         elseif ($versionMap[$VersionKey].Tool -eq "FPTW") {
             $process = Start-Process -FilePath "$PSScriptRoot\FPTW.exe" -ArgumentList "-BIOS -F $BinPath" -Wait -NoNewWindow -PassThru
-            if ($process.ExitCode -eq 0) {
-                Write-Host ("{0}[5;33mME reset required. Press Enter to continue...{0}[0m" -f [char]27)
-                Read-Host
-                Start-Process -FilePath "$PSScriptRoot\FPTW.exe" -ArgumentList "-GRESET" -Wait -NoNewWindow
-            }
         }
 
         if ($process.ExitCode -eq 0) {
@@ -261,6 +256,17 @@ if ($confirm -eq 'Y') {
         Show-Header
         if (Update-BIOS -VersionKey $pcVersion -BinPath $binPath) {
             Write-Host ("{0}[5;32mOperation completed successfully !{0}[0m" -f [char]27)
+
+            if ($pcVersionInfo.Tool -eq "AFUWIN") {
+                Write-Host ("{0}[5;33mA reboot is required.{0}[0m" -f [char]27)
+                Pause
+                Restart-Computer -Force -Confirm:$false
+            }
+            elseif ($pcVersionInfo.Tool -eq "FPTW") {
+                Write-Host ("{0}[5;33mME reset required.{0}[0m" -f [char]27)
+                Pause
+                Start-Process -FilePath "$PSScriptRoot\FPTW.exe" -ArgumentList "-GRESET" -Wait -NoNewWindow
+            }
         }
         else {
             Write-Host ("{0}[5;31mFlash failed.{0}[0m" -f [char]27)

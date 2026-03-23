@@ -1,15 +1,20 @@
 @echo off
+title Unowhy Tools BIOS Unlocker
+
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Requesting administrator privileges...
+    powershell -Command "Start-Process '%~f0' -Verb RunAs"
+    exit /b
+)
 
 powershell -window maximized -command ""
 
-title Unowhy Tools BIOS Unlocker
-echo Launching Unowhy Tools BIOS Unlocker... 
+echo Launching Unowhy Tools BIOS Unlocker...
 
-cd /d %~dp0\BIN
-
-powershell -ExecutionPolicy Bypass -Command "& .\flash.ps1"
+cd /d "%~dp0\BIN"
+powershell -ExecutionPolicy Bypass -File ".\flash.ps1"
 
 echo.
-
 pause
-exit 0
+exit /b 0
